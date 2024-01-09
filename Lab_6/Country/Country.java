@@ -1,12 +1,14 @@
 package Country;
 
 import java.util.ArrayList;
-/* import java.util.Comparator;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional; */
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Country {
     private String code;
@@ -16,7 +18,7 @@ public class Country {
     private int population;
     private double gnp;
     private int capital;
-    private ArrayList<City> cities;
+    private List<City> cities;
 
     public Country(String code,
             String name,
@@ -25,22 +27,34 @@ public class Country {
             int population,
             double gnp,
             int capital,
-            ArrayList<City> cities) {
+            List<City> cities) {
         this.code = code;
         this.name = name;
         this.continent = continent;
         this.surfaceArea = surfaceArea;
         this.population = population;
         this.gnp = gnp;
-        this.capital = capital;
-        this.cities = cities;
+        this.capital = 0;
+        this.cities = cities != null ? new ArrayList<>(cities) : new ArrayList<>();
     }
 
-    public int getCapital() {
+    public int getCapitalIndex() {
         return capital;
     }
 
-    public ArrayList<City> getCities() {
+    public City getCapital() {
+        City capital = null;
+        int capIndex = getCapitalIndex();
+        List<City> countryCities = getCities();
+
+        if (countryCities != null && capIndex >= 0 && capIndex < countryCities.size()) {
+            capital = countryCities.get(capIndex);
+        }
+
+        return capital;
+    }
+
+    public List<City> getCities() {
         return cities;
     }
 
@@ -69,30 +83,52 @@ public class Country {
     }
 
     public static City findHighestPopulatedCapital(ArrayList<Country> countries) {
+        Optional<City> maxPopulationCapital = countries.stream()
+                .map(c -> c.getCapital())
+                .filter(capital -> capital != null)
+                .max(Comparator.comparingDouble(c -> c.getPopulation()));
 
-        ArrayList<City> capitals = countries.stream()
-                .filter(country -> country.getCapital() >= 0 && country.getCapital() < country.getCities().size())
-                .map((Function<Country, City>) country -> country.getCities().get(country.getCapital()))
-                .collect(Collectors.toCollection(ArrayList<City>::new));
-
-        City maxPopulationCapital = null;
-        int maxPop = 0;
-        for (City c : capitals) {
-            if (c.getPopulation() > maxPop) {
-                maxPopulationCapital = c;
-                maxPop = c.getPopulation();
-            }
-        }
-
-        return maxPopulationCapital;
-
-        /*
-         * Optional<City> maxPopulationCapital = countries.stream()
-         * .map(country -> country.getCities().get(country.getCapital()))
-         * .max(Comparator.comparingInt(City::getPopulation));
-         * 
-         * return maxPopulationCapital.orElse(null);
-         */
-
+        return maxPopulationCapital.orElse(null);
     }
+
+    public static City maxPopulationCity(Country country) {
+        Optional<City> maxPopulationCity = country.getCities().stream()
+                .max(Comparator.comparingDouble(City::getPopulation));
+        return maxPopulationCity.orElse(null);
+    }
+
+    public static City maxPopulationCity(ArrayList<Country> countries) {
+        Optional<City> maxPopulationCity = countries.stream()
+                .flatMap(c -> c.getCities().stream())
+                .max(Comparator.comparingDouble(City::getPopulation));
+        return maxPopulationCity.orElse(null);
+    }
+
+    public static Country getCountryByName(String name, List<Country> countries) {
+        Country country = countries.stream()
+                .filter(c -> c.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+        return country;
+    }
+
+    public static Country getHighestPopCountry(List<Country> countries) {
+        Optional<Country> country = countries.stream().max(Comparator.comparing(c -> c.getPopulation()));
+        return country.orElse(null);
+    }
+
+    @Override
+    public String toString() {
+        return "Country{" +
+                "code='" + code + '\'' +
+                ", name='" + name + '\'' +
+                ", continent='" + continent + '\'' +
+                ", surfaceArea=" + surfaceArea +
+                ", population=" + population +
+                ", gnp=" + gnp +
+                ", capital='" + (getCapital() != null ? getCapital().getName() : "No Capital") +'\''+
+                ", cities=" + cities.size() +
+                '}';
+    }
+
 }
